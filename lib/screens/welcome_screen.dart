@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'chat_screen.dart';
 
 class WelcomeScreen extends StatefulWidget {
-  const WelcomeScreen({Key? key}) : super(key: key);
+  const WelcomeScreen({super.key});
 
   @override
   State<WelcomeScreen> createState() => _WelcomeScreenState();
@@ -105,7 +105,7 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onBackground,
+                    color: Theme.of(context).colorScheme.onSurface,
                     letterSpacing: 1.2,
                   ),
                 ),
