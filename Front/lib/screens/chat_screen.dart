@@ -2,8 +2,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../services/api_service.dart';
-import 'package:animated_text_kit/animated_text_kit.dart';
-import 'package:loading_animation_widget/loading_animation_widget.dart';
 
 class Message {
   final String text;
@@ -112,23 +110,36 @@ class _ChatScreenState extends State<ChatScreen>
       if (!mounted) return;
 
       setState(() {
+        // Sort history by timestamp to ensure proper ordering
+        history.sort(
+          (a, b) => DateTime.parse(
+            a['timestamp'],
+          ).compareTo(DateTime.parse(b['timestamp'])),
+        );
+
+        // Clear existing messages except welcome message
+        if (_messages.isNotEmpty) {
+          final welcomeMessage = _messages.first;
+          _messages.clear();
+          _messages.add(welcomeMessage);
+        }
+
         for (var msg in history) {
-          // Add user message
+          final timestamp = DateTime.parse(msg['timestamp']);
           _messages.add(
             Message(
               text: msg['prompt'],
               isUser: true,
               isFromHistory: true,
-              timestamp: DateTime.parse(msg['timestamp']),
+              timestamp: timestamp,
             ),
           );
-          // Add AI response
           _messages.add(
             Message(
               text: msg['response'],
               isUser: false,
               isFromHistory: true,
-              timestamp: DateTime.parse(msg['timestamp']),
+              timestamp: timestamp,
             ),
           );
         }
@@ -346,31 +357,6 @@ class _ChatScreenState extends State<ChatScreen>
         centerTitle: true,
         elevation: 0,
         backgroundColor: Colors.transparent,
-        actions: [
-          Tooltip(
-            message: 'Using Qwen 2.5 AI models',
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: Row(
-                children: [
-                  Text(
-                    'EYECONIC',
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.primary,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 14,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.auto_awesome,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
       body: Container(
         decoration: BoxDecoration(
@@ -611,78 +597,25 @@ class _ChatScreenState extends State<ChatScreen>
                                     ],
                                   ),
                                 ),
-                              if (message.isTyping)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 8.0,
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      LoadingAnimationWidget.staggeredDotsWave(
-                                        color:
-                                            Theme.of(
+                              if (!message.isTyping)
+                                Text(
+                                  message.text,
+                                  style: TextStyle(
+                                    color:
+                                        message.isUser
+                                            ? Theme.of(
                                               context,
-                                            ).colorScheme.primary,
-                                        size: 30,
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        'Thinking...',
-                                        style: TextStyle(
-                                          color: Theme.of(context)
-                                              .colorScheme
-                                              .onSurface
-                                              .withAlpha(179), // ~0.7
-                                          fontSize: 12,
-                                          fontStyle: FontStyle.italic,
-                                        ),
-                                      ),
-                                    ],
+                                            ).colorScheme.onPrimary
+                                            : message.isError
+                                            ? Theme.of(
+                                              context,
+                                            ).colorScheme.error
+                                            : Theme.of(
+                                              context,
+                                            ).colorScheme.onSurface,
+                                    fontSize: 16,
                                   ),
                                 ),
-                              if (!message.isTyping)
-                                message.isUser ||
-                                        message.isError ||
-                                        message.isFromHistory
-                                    ? Text(
-                                      message.text,
-                                      style: TextStyle(
-                                        color:
-                                            message.isUser
-                                                ? Theme.of(
-                                                  context,
-                                                ).colorScheme.onPrimary
-                                                : message.isError
-                                                ? Theme.of(
-                                                  context,
-                                                ).colorScheme.error
-                                                : Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurface,
-                                        fontSize: 16,
-                                      ),
-                                    )
-                                    : AnimatedTextKit(
-                                      animatedTexts: [
-                                        TypewriterAnimatedText(
-                                          message.text,
-                                          textStyle: TextStyle(
-                                            color:
-                                                Theme.of(
-                                                  context,
-                                                ).colorScheme.onSurface,
-                                            fontSize: 16,
-                                          ),
-                                          speed: const Duration(
-                                            milliseconds: 20,
-                                          ),
-                                        ),
-                                      ],
-                                      totalRepeatCount: 1,
-                                      displayFullTextOnTap: true,
-                                      stopPauseOnTap: true,
-                                    ),
                             ],
                           ),
                         ),
@@ -694,46 +627,79 @@ class _ChatScreenState extends State<ChatScreen>
             ),
             Container(
               decoration: BoxDecoration(
-                color: Theme.of(
-                  context,
-                ).colorScheme.surface.withAlpha(204), // ~0.8
+                color: Theme.of(context).colorScheme.surface.withAlpha(230),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withAlpha(26), // ~0.1
-                    offset: const Offset(0, -1),
-                    blurRadius: 8,
+                    color: Colors.black.withAlpha(20),
+                    offset: const Offset(0, -2),
+                    blurRadius: 6,
                   ),
                 ],
+                border: Border(
+                  top: BorderSide(
+                    color: Theme.of(context).colorScheme.primary.withAlpha(30),
+                    width: 1,
+                  ),
+                ),
               ),
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 12),
               child: SafeArea(
                 child: Row(
                   children: [
-                    IconButton(
-                      icon:
-                          _isSending && _selectedImage == null
-                              ? SizedBox(
-                                width: 24,
-                                height: 24,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Theme.of(context).colorScheme.primary,
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color:
+                            _selectedImage != null
+                                ? Theme.of(
+                                  context,
+                                ).colorScheme.primary.withAlpha(30)
+                                : Theme.of(context).scaffoldBackgroundColor,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color:
+                              _selectedImage != null
+                                  ? Theme.of(context).colorScheme.primary
+                                  : Theme.of(context).hintColor.withAlpha(50),
+                          width: 1,
+                        ),
+                      ),
+                      child: IconButton(
+                        icon:
+                            _isSending && _selectedImage == null
+                                ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Theme.of(context).colorScheme.primary,
+                                    ),
                                   ),
+                                )
+                                : Icon(
+                                  _selectedImage != null
+                                      ? Icons.image_rounded
+                                      : Icons.add_photo_alternate_rounded,
+                                  size: 22,
+                                  color:
+                                      _selectedImage != null
+                                          ? Theme.of(
+                                            context,
+                                          ).colorScheme.primary
+                                          : Theme.of(context).hintColor,
                                 ),
-                              )
-                              : Icon(
-                                _selectedImage != null
-                                    ? Icons.image
-                                    : Icons.image_outlined,
-                                color:
-                                    _selectedImage != null
-                                        ? Theme.of(context).colorScheme.primary
-                                        : Theme.of(context).hintColor,
-                              ),
-                      onPressed: _isSending ? null : _pickImage,
-                      tooltip:
-                          _selectedImage != null ? 'Change image' : 'Add image',
+                        onPressed: _isSending ? null : _pickImage,
+                        tooltip:
+                            _selectedImage != null
+                                ? 'Change image'
+                                : 'Add image',
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints(
+                          minWidth: 40,
+                          minHeight: 40,
+                        ),
+                      ),
                     ),
                     Expanded(
                       child: Container(
@@ -825,8 +791,8 @@ class _ChatScreenState extends State<ChatScreen>
                               ),
                             Padding(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 8,
+                                horizontal: 16,
+                                vertical: 2,
                               ),
                               child: TextField(
                                 controller: _messageController,
@@ -862,44 +828,80 @@ class _ChatScreenState extends State<ChatScreen>
                       ),
                     ),
                     const SizedBox(width: 8),
-                    FloatingActionButton(
-                      onPressed:
-                          _isSending
-                              ? null
-                              : (_isComposing || _selectedImage != null)
-                              ? _sendMessage
-                              : null,
-                      elevation: _isComposing || _selectedImage != null ? 2 : 0,
-                      backgroundColor:
-                          _isSending
-                              ? Theme.of(context).colorScheme.secondary
-                              : (_isComposing || _selectedImage != null)
-                              ? Theme.of(context).colorScheme.primary
-                              : Theme.of(
-                                context,
-                              ).colorScheme.surface.withAlpha(204), // ~0.8
-                      mini: true,
-                      child:
-                          _isSending
-                              ? SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(
-                                    Theme.of(context).colorScheme.onSecondary,
-                                  ),
-                                ),
-                              )
-                              : Icon(
-                                Icons.send_rounded,
-                                color:
-                                    _isComposing || _selectedImage != null
-                                        ? Theme.of(
-                                          context,
-                                        ).colorScheme.onPrimary
-                                        : Theme.of(context).hintColor,
-                              ),
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(20),
+                        gradient:
+                            _isComposing || _selectedImage != null
+                                ? LinearGradient(
+                                  colors: [
+                                    Theme.of(context).colorScheme.primary,
+                                    Theme.of(
+                                      context,
+                                    ).colorScheme.primary.withAlpha(230),
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                                : null,
+                        color:
+                            _isComposing || _selectedImage != null
+                                ? null
+                                : Theme.of(context).scaffoldBackgroundColor,
+                        border: Border.all(
+                          color:
+                              _isComposing || _selectedImage != null
+                                  ? Colors.transparent
+                                  : Theme.of(context).hintColor.withAlpha(50),
+                          width: 1,
+                        ),
+                      ),
+                      child: Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(20),
+                          onTap:
+                              _isSending
+                                  ? null
+                                  : (_isComposing || _selectedImage != null)
+                                  ? _sendMessage
+                                  : null,
+                          child: Container(
+                            padding: const EdgeInsets.all(10),
+                            child:
+                                _isSending
+                                    ? SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        valueColor:
+                                            AlwaysStoppedAnimation<Color>(
+                                              _isComposing ||
+                                                      _selectedImage != null
+                                                  ? Theme.of(
+                                                    context,
+                                                  ).colorScheme.onPrimary
+                                                  : Theme.of(
+                                                    context,
+                                                  ).colorScheme.primary,
+                                            ),
+                                      ),
+                                    )
+                                    : Icon(
+                                      Icons.send_rounded,
+                                      size: 20,
+                                      color:
+                                          _isComposing || _selectedImage != null
+                                              ? Theme.of(
+                                                context,
+                                              ).colorScheme.onPrimary
+                                              : Theme.of(context).hintColor,
+                                    ),
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),

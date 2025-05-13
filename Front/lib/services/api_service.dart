@@ -5,6 +5,13 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 
+// import 'dart:convert';
+// import 'dart:async';
+// import 'dart:io';
+// import 'package:flutter/foundation.dart' show kIsWeb;
+// import 'package:http/http.dart' as http;
+// import 'package:logger/logger.dart';
+
 class ApiService {
   // Change this to your Django backend URL (adjust for your setup)
   static const String baseUrl = 'http://localhost:8000/api';
@@ -43,18 +50,18 @@ class ApiService {
 
       // Handle differently for web vs mobile
       if (kIsWeb) {
-        // For web, we need a simpler approach since File won't work the same way
-        // For now, we'll just send the text (image upload requires a different approach in web)
+        // For web, we need to convert the image to base64
+        Map<String, dynamic> body = {'prompt': message};
+
+        if (image != null) {
+          // Read the image bytes and convert to base64
+          List<int> imageBytes = await image.readAsBytes();
+          String base64Image = base64Encode(imageBytes);
+          body['image'] = base64Image;
+        }
+
         final response = await http
-            .post(
-              uri,
-              headers: _headers,
-              body: jsonEncode({
-                'prompt': message,
-                // Image handling for web would require a different approach
-                // like base64 encoding or using FormData
-              }),
-            )
+            .post(uri, headers: _headers, body: jsonEncode(body))
             .timeout(
               const Duration(seconds: 30),
               onTimeout: () {
