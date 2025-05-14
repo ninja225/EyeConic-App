@@ -1,28 +1,3 @@
-.vscode/*
-!.vscode/extensions.json
-.idea
-.qodo
-.DS_Store
-*.suo
-.ntvs
-*.njsproj
-*.sln
-*.sw?
-venv
-chatbot_app/
-chatbot_app
-# Python compiled files
-__pycache__/
-*.py[cod]
-*.pyc
-db.sqlite3
-# Media files
-*.mp4
-BehindTheSearch/static/media/
-media/
-intro.mp4
-.env
-
 # Miscellaneous
 *.class
 *.log

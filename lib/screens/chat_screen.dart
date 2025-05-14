@@ -8,6 +8,7 @@ class Message {
   final bool isUser;
   final DateTime timestamp;
   final File? image;
+  final String? imageUrl; // Add support for remote image URLs
   final bool isError;
   final bool isSending;
   final bool isTyping;
@@ -17,6 +18,7 @@ class Message {
     required this.text,
     required this.isUser,
     this.image,
+    this.imageUrl, // Add imageUrl parameter
     this.isError = false,
     this.isSending = false,
     this.isTyping = false,
@@ -123,17 +125,22 @@ class _ChatScreenState extends State<ChatScreen>
           _messages.clear();
           _messages.add(welcomeMessage);
         }
-
         for (var msg in history) {
           final timestamp = DateTime.parse(msg['timestamp']);
+          final String? imageUrl = msg['image'] as String?;
+
+          // Create user message with image URL if it exists
           _messages.add(
             Message(
               text: msg['prompt'],
               isUser: true,
               isFromHistory: true,
               timestamp: timestamp,
+              imageUrl: imageUrl,
             ),
           );
+
+          // Create AI response message
           _messages.add(
             Message(
               text: msg['response'],
@@ -475,7 +482,8 @@ class _ChatScreenState extends State<ChatScreen>
                                       ),
                                       const SizedBox(width: 4),
                                       Text(
-                                        message.image != null
+                                        (message.image != null ||
+                                                message.imageUrl != null)
                                             ? "Eyeconic "
                                             : "Eyeconic",
                                         style: TextStyle(
@@ -490,7 +498,8 @@ class _ChatScreenState extends State<ChatScreen>
                                     ],
                                   ),
                                 ),
-                              if (message.image != null)
+                              if (message.image != null ||
+                                  message.imageUrl != null)
                                 Container(
                                   height: 200,
                                   width: double.infinity,
@@ -519,7 +528,11 @@ class _ChatScreenState extends State<ChatScreen>
                                       ),
                                     ],
                                     image: DecorationImage(
-                                      image: FileImage(message.image!),
+                                      image:
+                                          message.image != null
+                                              ? FileImage(message.image!)
+                                              : NetworkImage(message.imageUrl!)
+                                                  as ImageProvider,
                                       fit: BoxFit.cover,
                                       opacity: message.isSending ? 0.7 : 1.0,
                                     ),
