@@ -1,23 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Eyeconic Dark Theme Splash Screen -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    
-    <!-- Dark gradient background -->
     <item>
-        <shape android:shape="rectangle">
-            <gradient
-                android:startColor="#1E1E2E"
-                android:endColor="#13131A"
-                android:angle="270"
-                android:type="linear" />
-        </shape>
+        <bitmap android:gravity="fill" android:src="@drawable/background"/>
     </item>
-
-    <!-- Centered logo -->
-    <item android:gravity="center">
-        <bitmap
-            android:gravity="center"
-            android:src="@drawable/eyeconic_logo" />
+    <item>
+        <bitmap android:gravity="center" android:src="@drawable/splash"/>
     </item>
-
 </layer-list>
