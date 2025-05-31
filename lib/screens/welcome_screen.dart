@@ -70,11 +70,18 @@ class _WelcomeScreenState extends State<WelcomeScreen>
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            stops: const [0.0, 0.3, 0.7, 1.0],
             colors: [
-              Theme.of(context).colorScheme.surface,
+              Theme.of(
+                context,
+              ).colorScheme.surface.withAlpha((0.8 * 255).round()),
               Theme.of(context).scaffoldBackgroundColor,
+              Theme.of(context).scaffoldBackgroundColor,
+              Theme.of(
+                context,
+              ).colorScheme.surface.withAlpha((0.6 * 255).round()),
             ],
           ),
         ),
@@ -87,26 +94,91 @@ class _WelcomeScreenState extends State<WelcomeScreen>
                 child: FadeTransition(
                   opacity: _fadeAnimation,
                   child: Container(
-                    width: 200,
-                    height: 200,
-                    padding: const EdgeInsets.all(20),
+                    width: 220,
+                    height: 220,
+                    padding: const EdgeInsets.all(24),
                     decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(30),
+                      borderRadius: BorderRadius.circular(40),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.surface.withAlpha((0.9 * 255).round()),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha((0.15 * 255).round()),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                        BoxShadow(
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.primary.withAlpha((0.1 * 255).round()),
+                          blurRadius: 40,
+                          offset: const Offset(0, 0),
+                        ),
+                      ],
+                      border: Border.all(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.primary.withAlpha((0.3 * 255).round()),
+                        width: 1.5,
+                      ),
                     ),
                     child: Image.asset('assets/logo.png', fit: BoxFit.contain),
                   ),
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: 50),
               FadeTransition(
                 opacity: _fadeAnimation,
-                child: Text(
-                  'Welcome To EYECONIC',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: Theme.of(context).colorScheme.onSurface,
-                    letterSpacing: 1.2,
+                child: Column(
+                  children: [
+                    Text(
+                      'Welcome To EYECONIC',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onSurface,
+                        letterSpacing: 1.5,
+                        shadows: [
+                          Shadow(
+                            blurRadius: 8,
+                            color: Colors.black.withAlpha((0.1 * 255).round()),
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Your AI-Powered Vision Assistant',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.onSurface.withAlpha((0.7 * 255).round()),
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 60),
+              FadeTransition(
+                opacity: _fadeAnimation,
+                child: Container(
+                  width: 60,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    gradient: LinearGradient(
+                      colors: [
+                        Theme.of(context).colorScheme.primary,
+                        Theme.of(
+                          context,
+                        ).colorScheme.primary.withAlpha((0.6 * 255).round()),
+                      ],
+                    ),
                   ),
                 ),
               ),
