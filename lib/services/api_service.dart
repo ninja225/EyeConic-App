@@ -4,27 +4,45 @@ import 'dart:io';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
+import 'package:http_parser/http_parser.dart';
 
 class ApiService {
-  // Change this to your Django backend URL (adjust for your setup)
-  static const String baseUrl = 'http://localhost:8000/api';
+  // Use different base URLs depending on platform
+  // 10.0.2.2 is the special IP for Android emulator to access host machine
+  static String get baseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8000/api';
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:8000/api';
+    } else {
+      return 'http://localhost:8000/api';
+    }
+  }
+
+  // Server URL without /api path for accessing media files
+  static String get serverBaseUrl {
+    if (kIsWeb) {
+      return 'http://localhost:8000';
+    } else if (Platform.isAndroid) {
+      return 'http://10.0.2.2:8000';
+    } else {
+      return 'http://localhost:8000';
+    }
+  }
+
   final logger = Logger();
-  // Headers for regular JSON requests
+
   Map<String, String> get _headers => {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
-    // Do not manually add CORS headers in client code
-    // These are handled by the server
   };
+
   Future<bool> isServerReachable() async {
     try {
-      // Check chat-history endpoint as it's simpler (GET request)
       final response = await http
           .get(Uri.parse('$baseUrl/chat-history/'), headers: _headers)
           .timeout(const Duration(seconds: 5));
 
-      // Even if we get a 500 error, the server is technically reachable
-      // We'll handle the specific error elsewhere
       return response.statusCode != 502 &&
           response.statusCode != 503 &&
           response.statusCode != 504;
@@ -41,82 +59,46 @@ class ApiService {
     try {
       final uri = Uri.parse('$baseUrl/chat/');
 
-      // Handle differently for web vs mobile
-      if (kIsWeb) {
-        // For web, we need a simpler approach since File won't work the same way
-        // For now, we'll just send the text (image upload requires a different approach in web)
-        final response = await http
-            .post(
-              uri,
-              headers: _headers,
-              body: jsonEncode({
-                'prompt': message,
-                // Image handling for web would require a different approach
-                // like base64 encoding or using FormData
-              }),
-            )
-            .timeout(
-              const Duration(seconds: 30),
-              onTimeout: () {
-                throw TimeoutException('Request timed out');
-              },
-            );
+      // Use MultipartRequest for all platforms
+      var request = http.MultipartRequest('POST', uri);
+      request.fields['prompt'] = message;
 
-        logger.d(
-          'Web send message response: ${response.statusCode} - ${response.body}',
-        );
+      if (image != null) {
+        try {
+          String filename = image.path.split('/').last;
+          String extension = filename.split('.').last.toLowerCase();
 
-        if (response.statusCode == 200) {
-          return json.decode(response.body);
-        } else {
-          logger.e('Error: ${response.statusCode} - ${response.body}');
-          throw Exception('Failed to send message: ${response.body}');
-        }
-      } else {
-        // Mobile implementation using MultipartRequest
-        var request = http.MultipartRequest('POST', uri);
+          // Determine content type based on file extension
+          String contentType = 'image/jpeg';
+          if (extension == 'png') {
+            contentType = 'image/png';
+          }
 
-        // Add headers for multipart request
-        request.headers.addAll({'Accept': 'application/json'});
-
-        // Add text message - ensure field name matches backend
-        request.fields['prompt'] = message;
-
-        // Add image if provided - ensure field name matches backend
-        if (image != null) {
-          var imageStream = http.ByteStream(image.openRead());
-          var length = await image.length();
-          var multipartFile = http.MultipartFile(
+          var multipartFile = await http.MultipartFile.fromPath(
             'image',
-            imageStream,
-            length,
-            filename: image.path.split('/').last,
+            image.path,
+            contentType: MediaType.parse(contentType),
           );
           request.files.add(multipartFile);
+
+          logger.d('Added image to request: $filename');
+        } catch (e) {
+          logger.e('Error adding image to request: $e');
+          throw Exception('Failed to process image: $e');
         }
+      }
 
-        logger.d(
-          'Mobile sending request to $uri with prompt: $message and image: ${image != null}',
-        );
+      var streamedResponse = await request.send().timeout(
+        const Duration(seconds: 30),
+      );
 
-        var streamedResponse = await request.send().timeout(
-          const Duration(seconds: 30),
-          onTimeout: () {
-            throw TimeoutException('Request timed out');
-          },
-        );
+      var response = await http.Response.fromStream(streamedResponse);
+      logger.d('Message response: ${response.statusCode} - ${response.body}');
 
-        var response = await http.Response.fromStream(streamedResponse);
-        logger.d(
-          'Mobile send message response: ${response.statusCode} - ${response.body}',
-        );
-
-        if (response.statusCode == 200) {
-          return json.decode(response.body);
-        } else {
-          logger.e('Error: ${response.statusCode} - ${response.body}');
-          throw Exception('Failed to send message: ${response.body}');
-        }
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to send message: ${response.body}');
       }
     } on TimeoutException {
       logger.e('Request timed out');
@@ -130,42 +112,32 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getChatHistory() async {
     try {
       final url = '$baseUrl/chat-history/';
-      logger.d('Getting chat history from: $url');
-
       final response = await http
           .get(Uri.parse(url), headers: _headers)
-          .timeout(
-            const Duration(seconds: 10),
-            onTimeout: () {
-              throw TimeoutException('Request timed out');
-            },
-          );
-
-      logger.d(
-        'Chat history response: ${response.statusCode} - ${response.body}',
-      );
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         List<dynamic> data = json.decode(response.body);
+        // Process image URLs to make them absolute
+        for (var item in data) {
+          if (item['image'] != null && item['image'].toString().isNotEmpty) {
+            // Make sure the image URL is absolute
+            if (!item['image'].toString().startsWith('http')) {
+              item['image'] = '$serverBaseUrl${item['image']}';
+            }
+          }
+        }
         return data.cast<Map<String, dynamic>>();
       } else {
-        // Try to decode error message if possible
         String errorMsg = 'Failed to load chat history';
         try {
           final errorData = json.decode(response.body);
           if (errorData.containsKey('error')) {
             errorMsg = errorData['error'];
           }
-        } catch (e) {
-          // Ignore json decode errors
-        }
-
-        logger.e('Error: ${response.statusCode} - $errorMsg');
+        } catch (_) {}
         throw Exception('$errorMsg (${response.statusCode})');
       }
-    } on TimeoutException {
-      logger.e('Request timed out');
-      throw Exception('Request timed out. Server might be overloaded.');
     } catch (e) {
       logger.e('Error getting chat history: $e');
       throw Exception('Failed to communicate with server: $e');
