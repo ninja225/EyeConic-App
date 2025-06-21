@@ -11,22 +11,22 @@ class ApiService {
   // 10.0.2.2 is the special IP for Android emulator to access host machine
   static String get baseUrl {
     if (kIsWeb) {
-      return 'http://localhost:8000/api';
+      return 'https://present-factually-monkey.ngrok-free.app/api';
     } else if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000/api';
+      return 'https://present-factually-monkey.ngrok-free.app/api';
     } else {
-      return 'http://localhost:8000/api';
+      return 'https://present-factually-monkey.ngrok-free.app/api';
     }
   }
 
   // Server URL without /api path for accessing media files
   static String get serverBaseUrl {
     if (kIsWeb) {
-      return 'http://localhost:8000';
+      return 'https://present-factually-monkey.ngrok-free.app';
     } else if (Platform.isAndroid) {
-      return 'http://10.0.2.2:8000';
+      return 'https://present-factually-monkey.ngrok-free.app';
     } else {
-      return 'http://localhost:8000';
+      return 'https://present-factually-monkey.ngrok-free.app';
     }
   }
 

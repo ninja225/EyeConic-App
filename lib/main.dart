@@ -1,15 +1,34 @@
 import 'package:flutter/material.dart';
-import 'screens/welcome_screen.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'screens/chat_screen.dart';
 
 void main() {
+  WidgetsBinding widgetsBinding = WidgetsFlutterBinding.ensureInitialized();
+  FlutterNativeSplash.preserve(widgetsBinding: widgetsBinding);
+
+  // Remove splash screen after a short delay to ensure smooth transition
+  Future.delayed(const Duration(milliseconds: 1000), () {
+    FlutterNativeSplash.remove();
+  });
+
   runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
+    // Set system UI overlay style for consistent theming
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        systemNavigationBarColor: Color(0xFF0F0F14),
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+    );
+
     return MaterialApp(
       title: 'Eyeconic Chat',
       debugShowCheckedModeBanner: false,
@@ -44,7 +63,7 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const WelcomeScreen(),
+      home: const ChatScreen(),
     );
   }
 }

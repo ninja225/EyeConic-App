@@ -4,6 +4,20 @@
     <item android:drawable="@color/splash_background" />
     
     <!-- Centered logo with proper sizing -->
+    <item>
+        <shape>
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+    
+    <!-- Logo image with controlled size -->
+    <item android:gravity="center">
+        <shape android:shape="rectangle">
+            <solid android:color="@android:color/transparent" />
+        </shape>
+    </item>
+    
+    <!-- Custom logo with vector scaling -->
     <item 
         android:width="100dp"
         android:height="100dp"
