@@ -523,6 +523,7 @@ class _ChatScreenState extends State<ChatScreen>
     return Scaffold(
       appBar: AppBar(
         toolbarHeight: 80,
+        automaticallyImplyLeading: false, // Remove back button
         title: Container(
           height: 60,
           constraints: const BoxConstraints(maxWidth: 180),

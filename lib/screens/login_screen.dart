@@ -254,7 +254,7 @@ class _LoginScreenState extends State<LoginScreen>
                     TextFormField(
                       controller: _usernameController,
                       decoration: InputDecoration(
-                        labelText: 'Username or Email',
+                        labelText: 'Username',
                         prefixIcon: Icon(
                           Icons.person_outline,
                           color: Theme.of(context).colorScheme.primary,
