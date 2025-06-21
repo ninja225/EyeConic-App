@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 import 'package:http_parser/http_parser.dart';
+import 'auth_service.dart';
 
 class ApiService {
   // Use different base URLs depending on platform
@@ -31,6 +32,7 @@ class ApiService {
   }
 
   final logger = Logger();
+  final AuthService _authService = AuthService();
 
   Map<String, String> get _headers => {
     'Accept': 'application/json',
@@ -123,6 +125,13 @@ class ApiService {
 
       // Create multipart request for streaming
       var request = http.MultipartRequest('POST', uri);
+
+      // Add authentication headers
+      final authHeaders = await _authService.getAuthHeaders();
+      if (authHeaders != null) {
+        request.headers.addAll(authHeaders);
+      }
+
       request.fields['prompt'] = message;
 
       if (image != null) {

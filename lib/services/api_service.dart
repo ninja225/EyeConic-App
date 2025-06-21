@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
 import 'package:logger/logger.dart';
 import 'package:http_parser/http_parser.dart';
+import 'auth_service.dart';
 
 class ApiService {
   // Use different base URLs depending on platform
@@ -31,11 +32,19 @@ class ApiService {
   }
 
   final logger = Logger();
+  final AuthService _authService = AuthService();
 
   Map<String, String> get _headers => {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
   };
+
+  // Updated headers method to include auth token
+  Future<Map<String, String>> get _headersWithAuth async {
+    final authHeaders = await _authService.getAuthHeaders();
+    return authHeaders ??
+        {'Accept': 'application/json', 'Content-Type': 'application/json'};
+  }
 
   Future<bool> isServerReachable() async {
     try {
@@ -61,6 +70,13 @@ class ApiService {
 
       // Use MultipartRequest for all platforms
       var request = http.MultipartRequest('POST', uri);
+
+      // Add authentication headers
+      final authHeaders = await _authService.getAuthHeaders();
+      if (authHeaders != null) {
+        request.headers.addAll(authHeaders);
+      }
+
       request.fields['prompt'] = message;
 
       if (image != null) {
@@ -97,6 +113,13 @@ class ApiService {
 
       if (response.statusCode == 200) {
         return json.decode(response.body);
+      } else if (response.statusCode == 401) {
+        // Token expired, try to refresh
+        final isAuthenticated = await _authService.isAuthenticated();
+        if (!isAuthenticated) {
+          throw Exception('Authentication required. Please login again.');
+        }
+        throw Exception('Failed to send message: Authentication error');
       } else {
         throw Exception('Failed to send message: ${response.body}');
       }
@@ -112,8 +135,10 @@ class ApiService {
   Future<List<Map<String, dynamic>>> getChatHistory() async {
     try {
       final url = '$baseUrl/chat-history/';
+      final authHeaders = await _headersWithAuth;
+
       final response = await http
-          .get(Uri.parse(url), headers: _headers)
+          .get(Uri.parse(url), headers: authHeaders)
           .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
@@ -128,6 +153,13 @@ class ApiService {
           }
         }
         return data.cast<Map<String, dynamic>>();
+      } else if (response.statusCode == 401) {
+        // Token expired, try to refresh
+        final isAuthenticated = await _authService.isAuthenticated();
+        if (!isAuthenticated) {
+          throw Exception('Authentication required. Please login again.');
+        }
+        throw Exception('Failed to load chat history: Authentication error');
       } else {
         String errorMsg = 'Failed to load chat history';
         try {
@@ -142,5 +174,15 @@ class ApiService {
       logger.e('Error getting chat history: $e');
       throw Exception('Failed to communicate with server: $e');
     }
+  }
+
+  // Check if user is authenticated
+  Future<bool> isUserAuthenticated() async {
+    return await _authService.isAuthenticated();
+  }
+
+  // Logout user
+  Future<void> logout() async {
+    await _authService.logout();
   }
 }
